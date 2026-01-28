@@ -1,7 +1,7 @@
 # Database Ontwerp Voorstel: Migratie naar UiPath
 
-**Document versie:** 3.0
-**Datum:** 26 januari 2026
+**Document versie:** 3.1
+**Datum:** 28 januari 2026
 **Doelgroep:** Consultants, Product Owners, Business Stakeholders
 
 ---
@@ -49,66 +49,39 @@ Daarnaast zijn er helper-scripts:
 
 ### Status Flow van een Vacature in de Database
 
-```
-                  ┌─────────────────────┐
-                  │                     │
-                  ▼                     │
-NEW ──────► Added To Trello       SKIPPED
-                  │                     ▲
-                  │                     │
-                  └─────────────────────┘
-                    (URL niet meer beschikbaar
-                     of Unwanted Keyword)
+```mermaid
+flowchart LR
+    NEW --> ATT[Added To Trello]
+    ATT --> SKIPPED
+    NEW --> SKIPPED
+
+    SKIPPED -.- note["URL niet meer beschikbaar<br/>of Unwanted Keyword"]
 ```
 
 ### Huidige Trello Workflow (gebaseerd op code-analyse)
 
 Na aanmaak van een kaart doorloopt deze het volgende pad. De bewegingen worden uitgevoerd door twee automatische scripts.
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           TRELLO KAART LIFECYCLE                            │
-└─────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph title [" "]
+        direction TB
+        START[Nieuwe kaart aangemaakt] --> KANS2["Kans < 2 dagen<br/>(Kaarten komen hier binnen)"]
 
-    Nieuwe kaart aangemaakt
-            │
-            ▼
-    ┌───────────────────┐
-    │  Kans < 2 dagen   │ ◄── Kaarten komen hier binnen
-    └───────────────────┘
-            │
-            ├── AutoVerplaatser checkt:
-            │   │
-            │   ├── Uren per week < 32? ─────────────────┐
-            │   │                                        │
-            │   └── Kaart ouder dan 2 dagen? ───┐       │
-            │                                    │       │
-            ▼                                    ▼       ▼
-    ┌───────────────────┐              ┌───────────────────────┐
-    │  Kans > 2 dagen   │              │  Part-time opdrachten │
-    └───────────────────┘              └───────────────────────┘
-            │                                    │
-            └────────────┬───────────────────────┘
-                         │
-                         ▼
-            AutoSorteerArchiveer checkt (op alle 3 de lijsten):
-                         │
-            ┌────────────┴────────────┐
-            │                         │
-            ▼                         ▼
-    Deadline voorbij?           Deadline voorbij?
-    + GEEN teamlid              + WEL teamlid (toegewezen)
-            │                         │
-            ▼                         ▼
-    ┌───────────────┐       ┌─────────────────────────┐
-    │  Gearchiveerd │       │  Vergeten aan te bieden │
-    └───────────────┘       └─────────────────────────┘
-                                      │
-                                      │ (na 3 maanden)
-                                      ▼
-                            ┌───────────────┐
-                            │  Gearchiveerd │
-                            └───────────────┘
+        KANS2 --> CHECK{"AutoVerplaatser<br/>checkt"}
+        CHECK -->|"Uren < 32?"| PARTTIME[Part-time opdrachten]
+        CHECK -->|"Kaart > 2 dagen"| KANS2PLUS["Kans > 2 dagen"]
+        CHECK -->|"Geen van beide"| KANS2
+
+        KANS2PLUS --> ARCHIVEER{"AutoSorteerArchiveer<br/>checkt"}
+        PARTTIME --> ARCHIVEER
+        KANS2 --> ARCHIVEER
+
+        ARCHIVEER -->|"Deadline voorbij<br/>+ GEEN teamlid"| GEARCH1[Gearchiveerd]
+        ARCHIVEER -->|"Deadline voorbij<br/>+ WEL teamlid"| VERGETEN[Vergeten aan te bieden]
+
+        VERGETEN -->|"na 3 maanden"| GEARCH2[Gearchiveerd]
+    end
 ```
 
 **Toelichting:**
@@ -123,13 +96,17 @@ Na aanmaak van een kaart doorloopt deze het volgende pad. De bewegingen worden u
 ### Huidig Inconsistent Filtering-beleid
 
 **Patroon A - Filteren vóór opslag (bijv. Striive, Mercell)**
-```
-Website → Filter op keywords → Alleen relevante jobs naar DB
+
+```mermaid
+flowchart LR
+    A1[Website] --> A2[Filter op keywords] --> A3[Alleen relevante jobs naar DB]
 ```
 
 **Patroon B - Alles opslaan (bijv. Circle8)**
-```
-Website → Alle jobs naar DB → Filter later bij Trello-stap
+
+```mermaid
+flowchart LR
+    B1[Website] --> B2[Alle jobs naar DB] --> B3[Filter later bij Trello-stap]
 ```
 
 Dit maakt analyse over de algehele 'inhuurmarkt' lastiger: bij patroon A weten we niet hoeveel jobs we missen door filtering.
@@ -198,76 +175,78 @@ Voordat we het datamodel bespreken, een korte uitleg van de bouwstenen.
 
 Een tabel is zoals een Excel-sheet: rijen en kolommen. Elke rij is één record (bijv. één vacature), elke kolom is een eigenschap (bijv. Titel, Locatie).
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                      TABEL: Vacatures                           │
-├────────────┬────────────────────────┬───────────┬───────────────┤
-│ VacatureID │ Titel                  │ PortalID  │ Status        │
-├────────────┼────────────────────────┼───────────┼───────────────┤
-│ VAC-001    │ Senior Developer       │ C8        │ NEW           │
-│ VAC-002    │ Projectmanager         │ MAGNIT    │ ADDED_TO_TRELLO│
-│ VAC-003    │ Scrum Master           │ C8        │ SKIPPED       │
-└────────────┴────────────────────────┴───────────┴───────────────┘
-```
+**TABEL: Vacatures**
+
+| VacatureID | Titel | PortalID | Status |
+|------------|-------|----------|--------|
+| VAC-001 | Senior Developer | C8 | NEW |
+| VAC-002 | Projectmanager | MAGNIT | ADDED_TO_TRELLO |
+| VAC-003 | Scrum Master | C8 | SKIPPED |
 
 ### Wat is een Primary Key (PK)?
 
 De **Primary Key** is de unieke identifier van elke rij. Geen twee rijen mogen dezelfde PK hebben.
 
-```
-┌─────────────────────────────────────────────────┐
-│              TABEL: Portals                     │
-├────────────┬─────────────────┬──────────────────┤
-│ PortalID   │ Naam            │ IsActief         │
-│ (PK)       │                 │                  │
-├────────────┼─────────────────┼──────────────────┤
-│ C8         │ Circle8         │ Ja               │  ◄── PK = "C8"
-│ MAGNIT     │ Magnit          │ Ja               │  ◄── PK = "MAGNIT"
-│ STRIIVE    │ Striive         │ Ja               │  ◄── PK = "STRIIVE"
-└────────────┴─────────────────┴──────────────────┘
-       ▲
-       │
-   Elke waarde is UNIEK
-```
+**TABEL: Portals**
+
+| PortalID (PK) | Naam | IsActief |
+|---------------|------|----------|
+| C8 | Circle8 | Ja |
+| MAGNIT | Magnit | Ja |
+| STRIIVE | Striive | Ja |
+
+*Elke waarde in de PK-kolom is UNIEK*
 
 ### Wat is een Foreign Key (FK)?
 
 Een **Foreign Key** is een verwijzing naar de Primary Key van een andere tabel. Dit creëert de relatie.
 
+```mermaid
+erDiagram
+    Portals ||--o{ Vacatures : "heeft"
+    Portals {
+        string PortalID PK
+        string Naam
+        boolean IsActief
+    }
+    Vacatures {
+        string VacatureID PK
+        string PortalID FK
+        string Titel
+        string Status
+    }
 ```
-┌─────────────────┐              ┌─────────────────────────────────┐
-│    Portals      │              │          Vacatures              │
-├─────────────────┤              ├─────────────┬───────────────────┤
-│ PortalID (PK)   │◄─────────────│ PortalID    │ (FK naar Portals) │
-│ Naam            │              │ VacatureID  │ (PK)              │
-│ IsActief        │              │ Titel       │                   │
-└─────────────────┘              │ Status      │                   │
-                                 └─────────────┴───────────────────┘
 
-Voorbeeld data:
+**Voorbeeld data:**
 
-Portals:                         Vacatures:
-┌──────────┬─────────┐          ┌───────────┬────────────┬────────────┐
-│PortalID  │ Naam    │          │VacatureID │ PortalID   │ Titel      │
-├──────────┼─────────┤          ├───────────┼────────────┼────────────┤
-│ C8       │ Circle8 │◄─────────│ VAC-001   │ C8         │ Developer  │
-│          │         │◄─────────│ VAC-003   │ C8         │ Scrum Mstr │
-│ MAGNIT   │ Magnit  │◄─────────│ VAC-002   │ MAGNIT     │ PM         │
-└──────────┴─────────┘          └───────────┴────────────┴────────────┘
-```
+**Portals:**
+
+| PortalID | Naam |
+|----------|------|
+| C8 | Circle8 |
+| MAGNIT | Magnit |
+
+**Vacatures:**
+
+| VacatureID | PortalID | Titel |
+|------------|----------|-------|
+| VAC-001 | C8 | Developer |
+| VAC-003 | C8 | Scrum Mstr |
+| VAC-002 | MAGNIT | PM |
 
 ### SQLite: Eén bestand, meerdere tabellen
 
-**QLite ondersteunt meerdere tabellen.** Eén `.db` bestand bevat al je tabellen:
+**SQLite ondersteunt meerdere tabellen.** Eén `.db` bestand bevat al je tabellen:
 
-```
-vacatures.db (één bestand)
-    │
-    ├── Tabel: Portals
-    ├── Tabel: Vacatures
-    ├── Tabel: Keywords
-    ├── Tabel: StatusHistorie
-    └── Tabel: ScrapeRuns
+```mermaid
+flowchart TB
+    subgraph DB["vacatures.db (één bestand)"]
+        T1[Tabel: Portals]
+        T2[Tabel: Vacatures]
+        T3[Tabel: Keywords]
+        T4[Tabel: StatusHistorie]
+        T5[Tabel: ScrapeRuns]
+    end
 ```
 
 ---
@@ -298,20 +277,14 @@ Website → Alle jobs naar DB (met veld "PasseertFilter": ja/nee)
 
 ### Optie C: Alles opslaan, aparte processor filtert
 
-```
-Website → Alle jobs naar DB (status: NIEUW_ONGEFILTERD)
-                    │
-                    ▼
-          Filter-processor draait
-                    │
-          ┌─────────┴─────────┐
-          ▼                   ▼
-    PasseertFilter = Ja   PasseertFilter = Nee
-    Status = NEW          Status = GEFILTERD
-          │
-          ▼
-    URLtoTrello pikt alleen
-    "NEW" records op
+```mermaid
+flowchart TB
+    A[Website] --> B["Alle jobs naar DB<br/>(status: NIEUW_ONGEFILTERD)"]
+    B --> C[Filter-processor draait]
+    C --> D{"Passeert<br/>filter?"}
+    D -->|Ja| E["PasseertFilter = Ja<br/>Status = NEW"]
+    D -->|Nee| F["PasseertFilter = Nee<br/>Status = GEFILTERD"]
+    E --> G["URLtoTrello pikt alleen<br/>'NEW' records op"]
 ```
 
 | Voordelen | Nadelen |
@@ -510,75 +483,79 @@ UitzonderingTot: 2026-02-15  ← Tot die datum WEL toelaten
 
 ### Visueel Overzicht Relaties
 
+```mermaid
+erDiagram
+    Portals ||--o{ Vacatures : "heeft"
+    Portals ||--o{ ScrapeRuns : "logt"
+    Vacatures ||--|| VacatureFilterResultaat : "heeft"
+    Vacatures ||--o{ StatusHistorie : "heeft"
+
+    Portals {
+        string PortalID PK
+        string Naam
+        string BaseURL
+        boolean IsActief
+    }
+
+    Vacatures {
+        string VacatureID PK
+        string PortalID FK
+        string URL
+        string Titel
+        string Locatie
+        int UrenPerWeek
+        string Tarief
+        string Status
+        datetime EersteGezienOp
+        string TrelloCardID
+        string TrelloLijstNaam
+    }
+
+    Keywords {
+        int KeywordID PK
+        string Keyword
+        string Type
+        boolean IsActief
+        date UitzonderingTot
+    }
+
+    VacatureFilterResultaat {
+        int FilterID PK
+        string VacatureID FK
+        boolean PasseertKeywordFilter
+        string GeblokkeerddoorKeyword
+        boolean PasseertLocatieFilter
+        string GeblokkeerddoorLocatie
+        datetime FilterDatum
+    }
+
+    StatusHistorie {
+        int HistorieID PK
+        string VacatureID FK
+        string Bron
+        string VanWaarde
+        string NaarWaarde
+        datetime Tijdstip
+        string Script
+    }
+
+    ScrapeRuns {
+        int RunID PK
+        string PortalID FK
+        datetime StartTijd
+        datetime EindTijd
+        int AantalGevonden
+        int AantalNieuw
+        int AantalGefilterd
+        string Foutmelding
+    }
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         DATABASE SCHEMA OVERZICHT                           │
-└─────────────────────────────────────────────────────────────────────────────┘
 
-┌──────────────────┐
-│     Portals      │
-├──────────────────┤
-│ PortalID    (PK) │─────────────────────────────────┐
-│ Naam             │                                 │
-│ BaseURL          │                                 │
-│ IsActief         │                                 │
-└──────────────────┘                                 │
-                                                     │
-                                                     │ 1:N relatie
-                                                     │ (1 portal heeft
-                                                     │  meerdere vacatures)
-                                                     │
-                                                     ▼
-┌──────────────────┐         ┌───────────────────────────────────────────┐
-│    Keywords      │         │               Vacatures                   │
-├──────────────────┤         ├───────────────────────────────────────────┤
-│ KeywordID   (PK) │         │ VacatureID                           (PK) │
-│ Keyword          │         │ PortalID                             (FK) │──┐
-│ Type             │         │ URL, Titel, Locatie, etc.                 │  │
-│ IsActief         │         │ Status                                    │  │
-│ UitzonderingTot  │         │ TrelloCardID                              │  │
-└──────────────────┘         └───────────────────────────────────────────┘  │
-        │                                    │                              │
-        │                                    │ 1:1 relatie                  │
-        │                                    ▼                              │
-        │              ┌───────────────────────────────────────────┐       │
-        │              │        VacatureFilterResultaat            │       │
-        │              ├───────────────────────────────────────────┤       │
-        │              │ FilterID                              (PK) │       │
-        └─────────────►│ VacatureID                            (FK) │◄──────┘
-         "geblokkeerd  │ PasseertKeywordFilter                      │
-          door welk    │ GeblokkeerddoorKeyword                     │
-          keyword"     │ PasseertLocatieFilter                      │
-                       │ GeblokkeerddoorLocatie                     │
-                       └───────────────────────────────────────────┘
-
-                                    │
-                                    │ 1:N relatie
-                                    │ (1 vacature kan meerdere
-                                    │  statuswijzigingen hebben)
-                                    ▼
-                       ┌───────────────────────────────────────────┐
-                       │            StatusHistorie                 │
-                       ├───────────────────────────────────────────┤
-                       │ HistorieID                            (PK) │
-                       │ VacatureID                            (FK) │
-                       │ Bron (SCRAPER/FILTER/TRELLO_SCRIPT)       │
-                       │ VanWaarde                                  │
-                       │ NaarWaarde                                 │
-                       │ Tijdstip                                   │
-                       └───────────────────────────────────────────┘
-
-
-┌──────────────────┐
-│   ScrapeRuns     │
-├──────────────────┤
-│ RunID       (PK) │
-│ PortalID    (FK) │───► verwijst naar Portals
-│ StartTijd        │
-│ AantalGevonden   │
-│ etc.             │
-└──────────────────┘
-```
+**Relaties:**
+- **Portals → Vacatures**: 1:N (1 portal heeft meerdere vacatures)
+- **Vacatures → VacatureFilterResultaat**: 1:1 (elke vacature heeft één filterresultaat)
+- **Vacatures → StatusHistorie**: 1:N (1 vacature kan meerdere statuswijzigingen hebben)
+- **Portals → ScrapeRuns**: 1:N (1 portal heeft meerdere scrape runs)
 
 ---
 
@@ -643,6 +620,42 @@ Credentials horen niet in code. Ze moeten centraal en beveiligd opgeslagen worde
 3. Credential management aanpak bepalen
 4. Technische implementatie database-schema
 5. UiPath-processen maken
+
+---
+
+## 13. Future Use Cases
+
+> **Let op:** Onderstaande functionaliteit is **geen onderdeel van de MVP**. Dit geeft een beeld van hoe het systeem later uitgebreid kan worden.
+
+### Medewerkers & Automatische Matching
+
+Een mogelijke uitbreiding is het automatisch matchen van beschikbare consultants aan nieuwe vacatures op basis van hun profiel en voorkeuren.
+
+**Probleem dat dit oplost:**
+- Handmatig checken in Trello wie bij welke vacature past
+- Geen gestructureerde data over skills en beschikbaarheid
+- Voorkeuren (locatie, uren, tarief) niet vastgelegd
+
+**Hoe zou dit werken:**
+
+```mermaid
+flowchart TB
+    A[Nieuwe vacature binnenkomt] --> B[Matching engine vergelijkt<br/>met medewerker-profielen]
+    B --> C["Match score (0-100) op basis van:"]
+    C --> D["Skills overlap (40 pts)<br/>Uren match (20 pts)<br/>Locatie match (20 pts)<br/>Tarief match (20 pts)"]
+    D --> E[Top matches] --> F[Notificatie naar team]
+```
+
+**Benodigde tabellen:**
+- `Medewerkers` - Basisgegevens, beschikbaarheid, voorkeuren
+- `MedewerkerSkills` - Skills per medewerker met niveau
+- `VacatureMatches` - Welke medewerker past bij welke vacature (met score)
+
+**Mogelijke vervolgstappen:**
+- Auto-notificatie bij match > 80%
+- Dashboard "wie zoekt wat"
+- Historische match tracking (welke matches leidden tot plaatsing?)
+- Skill gap analyse (welke skills missen we als team?)
 
 ---
 
