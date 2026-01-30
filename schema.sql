@@ -61,7 +61,7 @@ CREATE TABLE vacatures (
     titel           VARCHAR(500) NOT NULL,
     organisatie     VARCHAR(200),
     locatie         VARCHAR(200),
-    uren_per_week   INTEGER,
+    uren_per_week   VARCHAR(100),
     tarief          VARCHAR(100),
     deadline        DATE,
     eerste_gezien_op TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -72,6 +72,7 @@ CREATE TABLE vacatures (
 
 COMMENT ON TABLE vacatures IS 'Fact-tabel: elke gescrapete vacature (onveranderlijk na aanmaken)';
 COMMENT ON COLUMN vacatures.vacature_id IS 'Extern gegenereerde UUID';
+COMMENT ON COLUMN vacatures.uren_per_week IS 'Optioneel: ruwe waarde uit de API (bijv. "32-40 uur", "Fulltime")';
 COMMENT ON COLUMN vacatures.beschrijving IS 'Optioneel: volledige vacaturetekst voor doorzoekbaarheid en AI-matching';
 
 CREATE INDEX idx_vacatures_portal ON vacatures(portal_id);
@@ -109,7 +110,7 @@ CREATE INDEX idx_events_tijdstip ON vacature_events(tijdstip DESC);
 CREATE INDEX idx_events_type ON vacature_events(event_type);
 CREATE INDEX idx_events_trello_card ON vacature_events(trello_card_id) WHERE trello_card_id IS NOT NULL;
 
--- Scrape Runs: Logging van scrape-runs per portal
+-- Scrape Runs: Logging van scrape-runs per portal (legacy, wordt vervangen door job_runs)
 CREATE TABLE scrape_runs (
     run_id          SERIAL PRIMARY KEY,
     portal_id       VARCHAR(20) NOT NULL REFERENCES portals(portal_id) ON DELETE RESTRICT,
@@ -121,10 +122,31 @@ CREATE TABLE scrape_runs (
     foutmelding     TEXT
 );
 
-COMMENT ON TABLE scrape_runs IS 'Fact-tabel: logging van scrape-runs met statistieken';
+COMMENT ON TABLE scrape_runs IS 'Fact-tabel: logging van scrape-runs met statistieken (legacy)';
 
 CREATE INDEX idx_runs_portal ON scrape_runs(portal_id);
 CREATE INDEX idx_runs_start ON scrape_runs(start_tijd DESC);
+
+-- Job Runs: Generieke logging voor alle job types (scrape, process, webhook, etc.)
+CREATE TABLE job_runs (
+    run_id          SERIAL PRIMARY KEY,
+    job_type        VARCHAR(30) NOT NULL CHECK (job_type IN ('SCRAPE', 'PROCESS', 'WEBHOOK', 'FILTER')),
+    portal_id       VARCHAR(20) REFERENCES portals(portal_id) ON DELETE RESTRICT,
+    start_tijd      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    eind_tijd       TIMESTAMPTZ,
+    status          VARCHAR(20) NOT NULL DEFAULT 'RUNNING' CHECK (status IN ('RUNNING', 'SUCCESS', 'FAILED')),
+    items_processed INTEGER DEFAULT 0,
+    items_success   INTEGER DEFAULT 0,
+    items_failed    INTEGER DEFAULT 0,
+    error_message   TEXT
+);
+
+COMMENT ON TABLE job_runs IS 'Fact-tabel: generieke logging voor alle job types';
+COMMENT ON COLUMN job_runs.job_type IS 'Type job: SCRAPE, PROCESS, WEBHOOK, FILTER';
+
+CREATE INDEX idx_job_runs_type ON job_runs(job_type);
+CREATE INDEX idx_job_runs_start ON job_runs(start_tijd DESC);
+CREATE INDEX idx_job_runs_status ON job_runs(status) WHERE status = 'RUNNING';
 
 -- ============================================================================
 -- HELPER VIEWS
