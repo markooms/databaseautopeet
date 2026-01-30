@@ -1,0 +1,175 @@
+{
+  "project": "Database Development Omgeving Setup",
+  "version": "1.0",
+  "created_at": "2026-01-30",
+  "stories": [
+    {
+      "id": "US-001",
+      "title": "PostgreSQL Installeren",
+      "description": "Als developer wil ik PostgreSQL lokaal draaien zodat ik tegen een echte database kan ontwikkelen.",
+      "acceptance_criteria": [
+        "PostgreSQL 14+ is geïnstalleerd of draait in Docker",
+        "Server is bereikbaar op localhost:5432",
+        "Credentials zijn geconfigureerd",
+        "psql CLI tool is beschikbaar"
+      ],
+      "priority": "high",
+      "story_points": 3
+    },
+    {
+      "id": "US-002",
+      "title": "Database Aanmaken",
+      "description": "Als developer wil ik een dedicated database hebben zodat het project geïsoleerd is.",
+      "acceptance_criteria": [
+        "Database `autopeet` bestaat",
+        "Database gebruikt UTF-8 encoding",
+        "Connectie string is gedocumenteerd"
+      ],
+      "priority": "high",
+      "story_points": 1
+    },
+    {
+      "id": "US-003",
+      "title": "Tabellen Aanmaken",
+      "description": "Als developer wil ik alle tabellen aanmaken zodat de datastructuur klaar is.",
+      "acceptance_criteria": [
+        "Dimensie-tabellen aangemaakt: portals, keywords, trello_lijsten",
+        "Fact-tabellen aangemaakt: vacatures, vacature_events, scrape_runs",
+        "Alle kolommen hebben correcte datatypes",
+        "Primary keys zijn gedefinieerd",
+        "Foreign keys zijn gedefinieerd met ON DELETE/UPDATE acties"
+      ],
+      "priority": "high",
+      "story_points": 3
+    },
+    {
+      "id": "US-004",
+      "title": "Constraints en Indexen",
+      "description": "Als developer wil ik dat de database integriteit waarborgt zodat ik geen corrupte data krijg.",
+      "acceptance_criteria": [
+        "NOT NULL constraints op verplichte velden",
+        "UNIQUE constraint op vacatures(portal_id, url)",
+        "CHECK constraints op enum-achtige velden (event_type, keyword type)",
+        "Performance indexen op veelgebruikte query kolommen"
+      ],
+      "priority": "high",
+      "story_points": 2
+    },
+    {
+      "id": "US-005",
+      "title": "Mock Portals Laden",
+      "description": "Als developer wil ik test portals hebben zodat ik vacatures kan koppelen.",
+      "acceptance_criteria": [
+        "Minimaal 5 realistische portals (C8, MAGNIT, STRIIVE, etc.)",
+        "Mix van actieve en inactieve portals",
+        "Correcte base_urls"
+      ],
+      "priority": "medium",
+      "story_points": 1
+    },
+    {
+      "id": "US-006",
+      "title": "Mock Keywords Laden",
+      "description": "Als developer wil ik test keywords hebben zodat ik filtering kan testen.",
+      "acceptance_criteria": [
+        "Minimaal 10 unwanted keywords",
+        "Minimaal 5 unwanted locaties",
+        "Mix van actieve/inactieve",
+        "Enkele met uitzondering_tot datum"
+      ],
+      "priority": "medium",
+      "story_points": 2
+    },
+    {
+      "id": "US-007",
+      "title": "Mock Trello Lijsten Laden",
+      "description": "Als developer wil ik test Trello lijsten hebben zodat ik event logging kan testen.",
+      "acceptance_criteria": [
+        "Minimaal 5 Trello lijsten met realistische namen",
+        "Correcte volgorde nummering",
+        "Mix van actieve/inactieve lijsten"
+      ],
+      "priority": "medium",
+      "story_points": 1
+    },
+    {
+      "id": "US-008",
+      "title": "Mock Vacatures Laden",
+      "description": "Als developer wil ik test vacatures hebben zodat ik queries kan uitvoeren.",
+      "acceptance_criteria": [
+        "Minimaal 20 vacatures verspreid over meerdere portals",
+        "Variatie in locaties, uren, tarieven",
+        "Sommige met beschrijving, sommige zonder",
+        "Realistische titels en organisaties"
+      ],
+      "priority": "medium",
+      "story_points": 3
+    },
+    {
+      "id": "US-009",
+      "title": "Mock Events Laden",
+      "description": "Als developer wil ik test events hebben zodat ik de event historie kan testen.",
+      "acceptance_criteria": [
+        "Elke vacature heeft minimaal SCRAPED event",
+        "Sommige vacatures hebben volledige lifecycle (tot TRELLO_ARCHIVED)",
+        "Sommige gefilterd (FILTERED event)",
+        "Events zijn chronologisch consistent"
+      ],
+      "priority": "medium",
+      "story_points": 3
+    },
+    {
+      "id": "US-010",
+      "title": "Mock Scrape Runs Laden",
+      "description": "Als developer wil ik test scrape runs hebben zodat ik statistieken kan analyseren.",
+      "acceptance_criteria": [
+        "Minimaal 10 scrape runs verspreid over portals",
+        "Mix van succesvolle en gefaalde runs",
+        "Realistische aantallen"
+      ],
+      "priority": "medium",
+      "story_points": 2
+    },
+    {
+      "id": "US-011",
+      "title": "Schema Verificatie",
+      "description": "Als developer wil ik verifiëren dat het schema correct is zodat ik met vertrouwen kan ontwikkelen.",
+      "acceptance_criteria": [
+        "Alle tabellen zijn aangemaakt (check met \\dt)",
+        "Kolom definities kloppen (check met \\d tabel)",
+        "Foreign keys werken (insert met invalid FK faalt)",
+        "Unique constraints werken (duplicate insert faalt)"
+      ],
+      "priority": "high",
+      "story_points": 2
+    },
+    {
+      "id": "US-012",
+      "title": "Data Verificatie",
+      "description": "Als developer wil ik verifiëren dat de mock data correct is geladen.",
+      "acceptance_criteria": [
+        "COUNT queries geven verwachte aantallen",
+        "JOIN queries werken correct",
+        "Event historie is opvraagbaar per vacature",
+        "Geen orphan records (FK integriteit)"
+      ],
+      "priority": "high",
+      "story_points": 2
+    }
+  ],
+  "summary": {
+    "total_stories": 12,
+    "total_story_points": 25,
+    "by_priority": {
+      "high": 6,
+      "medium": 6,
+      "low": 0
+    },
+    "by_category": {
+      "database_installatie": ["US-001", "US-002"],
+      "schema_deployment": ["US-003", "US-004"],
+      "mock_data": ["US-005", "US-006", "US-007", "US-008", "US-009", "US-010"],
+      "verificatie": ["US-011", "US-012"]
+    }
+  }
+}
