@@ -1,0 +1,14 @@
+{
+  "name": "session-capture",
+  "version": "1.0.0",
+  "description": "Capture browser session for API scraping",
+  "type": "module",
+  "bin": {
+    "session-capture": "./cli.js"
+  },
+  "dependencies": {
+    "playwright": "^1.50.0",
+    "playwright-extra": "^4.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
+  }
+}
