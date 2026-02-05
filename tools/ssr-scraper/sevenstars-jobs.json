@@ -1,0 +1,30 @@
+{
+  "site": "Seven Stars",
+  "scrapedAt": "2026-02-05T12:48:06.508Z",
+  "totalJobs": 10,
+  "detailedJobs": 3,
+  "jobs": [
+    {
+      "id": "7S-004005",
+      "href": "/opdracht/product-ownercloud_7S-004005",
+      "url": "https://www.sevenstars.nl/opdracht/product-ownercloud_7S-004005",
+      "meta": {}
+    },
+    {
+      "id": "7S-004004",
+      "href": "/opdracht/projectleider-preventie-metgezag_7S-004004",
+      "title": "Projectleider Preventie met Gezag",
+      "url": "https://www.sevenstars.nl/opdracht/projectleider-preventie-metgezag_7S-004004",
+      "description": "Doorzoek websiteWij helpen je graag bij het vinden van de juiste informatie",
+      "meta": {}
+    },
+    {
+      "id": "7S-004003",
+      "href": "/opdracht/business-analist-nfi-nieuw-wetboek-vanstrafvordering_7S-004003",
+      "title": "Business analist NFI Nieuw Wetboek van Strafvordering",
+      "url": "https://www.sevenstars.nl/opdracht/business-analist-nfi-nieuw-wetboek-vanstrafvordering_7S-004003",
+      "description": "Doorzoek websiteWij helpen je graag bij het vinden van de juiste informatie",
+      "meta": {}
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "site": "Circle8",
+  "scrapedAt": "2026-02-05T12:48:33.815Z",
+  "totalJobs": 10,
+  "detailedJobs": 3,
+  "jobs": [
+    {
+      "id": "VNR-80064",
+      "href": "/opdracht/adviseur-uitkomstgerichte-zorg_VNR-80064",
+      "title": "Adviseur Uitkomstgerichte Zorg",
+      "url": "https://www.circle8.nl/opdracht/adviseur-uitkomstgerichte-zorg_VNR-80064",
+      "description": "Waar ben je naar op zoek? Zoek"
+    },
+    {
+      "id": "VNR-80071",
+      "href": "/opdracht/senior-oracle-(en-sql)-database-beheerder_VNR-80071",
+      "title": "Senior Oracle (en SQL) database beheerder",
+      "url": "https://www.circle8.nl/opdracht/senior-oracle-(en-sql)-database-beheerder_VNR-80071",
+      "description": "Waar ben je naar op zoek? Zoek"
+    },
+    {
+      "id": "VNR-80066",
+      "href": "/opdracht/security-specialist---hacktester_VNR-80066",
+      "title": "Security Specialist - Hacktester",
+      "url": "https://www.circle8.nl/opdracht/security-specialist---hacktester_VNR-80066",
+      "description": "Waar ben je naar op zoek? Zoek"
+    }
+  ]
+}
